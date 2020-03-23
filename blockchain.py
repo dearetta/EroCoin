@@ -40,18 +40,16 @@ class Blockchain:
 
     def new_transfer(self, id, sender, recipient, amount, signature):
         # create new transfer-type transaction
+        print(self.chain)
         unspent = 0
         for block in self.chain:
             transactions = block['transactions']
             for transaction in transactions:
+                print(type(transaction))
                 if transaction['sender'] == sender:
-                    sender_dict = transaction
-                    unspent = transaction['Leftover']
-                    last_transact = transaction
+                    unspent = transaction['leftover']
                 elif transaction['recipient'] == sender:
-                    recip_dict = transaction
-                    unspent += transaction['Amount']
-                    last_transact = transaction
+                    unspent += transaction['amount']
                 else:
                     pass
 
@@ -73,20 +71,20 @@ class Blockchain:
             self.mempool.append(transaction)
             return transaction
         else:
-            return 401
+            return 403
 
     @staticmethod
     def get_transact_id(sender, amount, recipient):
         dk = hashlib.sha256()
         bamount = str(amount).encode()
         dk.update(bamount)
-        dk.update(sender)
-        dk.update(recipient)
+        dk.update(sender.encode())
+        dk.update(recipient.encode())
         return dk.hexdigest()
 
-    def new_reward(self, miner, signature):
+    def new_reward(self, id, miner, signature):
         transaction = {
-            "id": "miner",
+            "id": id,
             "type": "reward",
             "timestamp": time(),
             "sender": "None",
@@ -96,8 +94,11 @@ class Blockchain:
             "amount": self.reward,
             "leftover": 0
         }
-        self.mempool.append(transaction)
-        return transaction
+        if self.validate_transaction(transaction):
+            print(type(transaction))
+            return transaction
+        else:
+            return False
 
     def new_fee(self, miner, signature):
         transaction = {
@@ -111,7 +112,6 @@ class Blockchain:
             "amount": self.fee,
             "leftover": 0
         }
-        self.mempool.append(transaction)
         return transaction
 
     def validate_transaction(self, transaction):
@@ -123,6 +123,7 @@ class Blockchain:
         leftover = transaction['leftover']
         # check if id is valid
         if self.get_transact_id(sender, amount, recipient) != transaction['id']:
+            print("line 126")
             return False
         else:
             pass
@@ -130,30 +131,45 @@ class Blockchain:
         message = transaction['id'].encode()
         public_key = sender
         sig = transaction['signature']
-        verify_key = ecdsa.VerifyingKey.from_string(bytes.fromhex(public_key), curve=NIST256p)
-        if not verify_key.verify(bytes.fromhex(sig), message):
-            return False
-        else:
+        if sender == "None":
             pass
+        else:
+            verify_key = ecdsa.VerifyingKey.from_string(bytes.fromhex(public_key), curve=NIST256p)
+            if not verify_key.verify(bytes.fromhex(sig), message):
+                print("line 139")
+                return False
+            else:
+                pass
         # check if unspent is enough
-        if unspent - amount < self.fee:
-            return False
-        else:
+        if sender == "None":
             pass
-        # check if leftover is true
-        if unspent - amount != leftover:
-            return False
         else:
+            if unspent - amount < self.fee:
+                print("line 149")
+                return False
+            else:
+                pass
+        # check if leftover is true
+        if sender == "None":
             return True
+        else:
+            print(unspent, amount, leftover)
+            if unspent - amount != leftover+self.fee:
+                print("line 156")
+                return False
+            else:
+                return True
 
-    def new_block(self, nonce, transaction):
+    def new_block(self, nonce, transaction, previous_hash):
         # creates new block and append them
+        transactions = []
+        transactions.append(transaction)
         block = {
             "index": len(self.chain)+1,
-            "previous_hash": self.hash_block(self.last_block),
+            "previous_hash": previous_hash,
             "timestamp": time(),
             "nonce": nonce,
-            "transactions": transaction
+            "transactions": transactions
         }
         self.chain.append(block)
         return block
@@ -169,39 +185,49 @@ class Blockchain:
         return self.chain[0]
 
     def initiate_genesis_block(self):
-        self.chain[0] = {
+        genesis = {
             "index": 0,
             "previous_hash": "8132eb35f965fe190a9e903b1c392909579a816d9bcf18dfda3e942ed39be2d7",
             "timestamp": time(),
             "nonce": 69,
-            "transactions": None
+            "transactions": [
+                {
+                    "id": "Corvus_Rex",
+                    "type": "genesis",
+                    "timestamp": 0,
+                    "sender": "None",
+                    "signature": "Yeet",
+                    "unspent": 1,
+                    "recipient": "None",
+                    "amount": 0,
+                    "leftover": 0
+                }
+            ]
         }
+        self.chain.append(genesis)
 
     @property
     def last_block(self):
         # Returns the last Block in the chain
         return self.chain[-1]
 
-    def proof_of_work(self, transactions):
+    def proof_of_work(self, last_nonce):
         # hash of nonce*last nonce in string
         # if hash string starts with 0 * difficulty, return the nonce
         nonce = 0
-        while True:
-            temp_hash = self.multi_hash(transactions, nonce)
-            if self.hash_matches_difficulty(temp_hash):
-                return nonce
-            else:
-                nonce += 1
+        while self.nonce_matches_difficulty(last_nonce, nonce) is False:
+            nonce += 1
+        return nonce
 
-    def hash_matches_difficulty(self, hash):
-        binary_hash = ''.join(format(ord(x), 'b') for x in hash)
-        prefix = "0" * self.difficulty
-        return binary_hash.startswith(prefix)
+    def nonce_matches_difficulty(self, last_nonce, nonce):
+        guess = f'{last_nonce}{nonce}'.encode()
+        guess_hash = hashlib.sha256(guess).hexdigest()
+        return guess_hash[:self.difficulty] == "0"*self.difficulty
 
     @staticmethod
     def multi_hash(transactions, nonce):
         dk = hashlib.sha256()
-        btransactions = json.dumps(transactions).encode()
+        btransactions = str(transactions).encode()
         bnonce = str(nonce).encode()
         dk.update(btransactions)
         dk.update(bnonce)
