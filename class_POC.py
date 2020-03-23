@@ -67,6 +67,72 @@ print("Is " + p1.name + " sitting? " + str(p1.isSitting))
 print(type(r2))
 print(time())
 
-arr = [1,2,3,4,5,6,7,8]
-foo = 3
-print(arr[-1 - foo])
+apple = "apple"
+test = str(''.join(format(ord(x), 'b') for x in apple))
+print(type(test))
+print(test)
+
+import hashlib
+import json
+
+def generate_hash2(secret, param_str, param_dict):
+    dk = hashlib.sha256()
+    bsecret = str(secret).encode('utf-8')
+    bparam_str = param_str.encode('utf-8')
+    bparam_dict = json.dumps(param_dict).encode('utf-8')
+    dk.update(bsecret)
+    dk.update(bparam_str)
+    dk.update(bparam_dict)
+    return dk.hexdigest()
+
+
+print(generate_hash2(2, "pie", {"apple": 2, "pie": 1}))
+
+from ecdsa import SigningKey, NIST256p
+from hashlib import sha256
+import ecdsa
+
+pv_key = SigningKey.generate(curve=NIST256p)
+pv_string = pv_key.to_string().hex()
+pb_key = pv_key.get_verifying_key()
+pb_string = pb_key.to_string().hex()
+print(pv_string, pb_string)
+print(len("98cedbb266d9fc38e41a169362708e0509e06b3040a5dfff6e08196f8d9e49cebfb4f4cb12aa7ac34b19f3b29a17f4e5464873f151fd699c2524e0b7843eb383"))
+
+import os.path
+
+if os.path.isfile('key.dat'):
+    file = open("key.dat", "rb")
+    pv_key = SigningKey.from_string(file.readline(), curve=NIST256p)
+    pb_key = pv_key.get_verifying_key()
+    file.close()
+    pv_string = pv_key.to_string()
+    pb_string = pb_key.to_string()
+    print("----------------\n")
+    print(pv_string.hex(), pb_string.hex())
+    print("------SIGN--------\n")
+    sign = pv_key.sign(b"yeetusfeetus")
+    print(sign.hex())
+    assert pb_key.verify(sign, b"yeetusfeetus")
+else:
+    pv_key = SigningKey.generate(curve=NIST256p)
+    pv_string = pv_key.to_string()
+    pb_key = pv_key.get_verifying_key()
+    pb_string = pb_key.to_string()
+    file = open("key.dat", "wb")
+    file.write(pv_string)
+    file.close()
+    print(pv_string.hex(), pb_string.hex())
+    print("------SIGN--------\n")
+    sign = pv_key.sign(b"yeetusfeetus")
+    print(sign.hex())
+    assert pb_key.verify(sign, b"yeetusfeetus")
+
+print("--------------KEY VERIFICATION FROM EXISTING SIG------------")
+message = "yeetusfeetus".encode()
+public_key = "2ef97fbb2df87d662ce5b2ef13ecfe5023986063ecdb512692a128ca31f147e247735a639b15a9192ea4c429301b3a3aa097e13b34f3324b5e837ae79edad8b3"
+verify_key = ecdsa.VerifyingKey.from_string(bytes.fromhex(public_key), curve=NIST256p)
+if not verify_key.verify(bytes.fromhex(sign.hex()), message):
+    print(False)
+else:
+    print("YEEY")

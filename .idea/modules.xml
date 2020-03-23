@@ -3,6 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/EroCoin.iml" filepath="$PROJECT_DIR$/.idea/EroCoin.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../ErosCoin/.idea/ErosCoin.iml" filepath="$PROJECT_DIR$/../ErosCoin/.idea/ErosCoin.iml" />
     </modules>
   </component>
 </project>
