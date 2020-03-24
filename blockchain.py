@@ -13,7 +13,7 @@ class Blockchain:
         "previous_hash": hash of previous block
         "timestamp": when the block was mined
         "nonce": proof-of-work mining result
-        "transactions": transactions (2) in the block
+        "transactions": transactions in the block
     }
 
     { //Transaction
@@ -35,8 +35,8 @@ class Blockchain:
         self.diff_adjust_interval = 10  # difficulty adjusted per x block created
         self.block_generation_interval = 5  # expected minutes for one block creation
         self.mempool = []
-        self.reward = 69
-        self.fee = 1
+        self.reward = 5
+        self.fee = 5
 
     def new_transfer(self, id, sender, recipient, amount, signature):
         # create new transfer-type transaction
@@ -100,9 +100,9 @@ class Blockchain:
         else:
             return False
 
-    def new_fee(self, miner, signature):
+    def new_fee(self, id, miner, signature):
         transaction = {
-            "id": "miner",
+            "id": id,
             "type": "fee",
             "timestamp": time(),
             "sender": "None",
@@ -163,7 +163,7 @@ class Blockchain:
     def new_block(self, nonce, transaction, previous_hash):
         # creates new block and append them
         transactions = []
-        transactions.append(transaction)
+        transactions.extend(transaction)
         block = {
             "index": len(self.chain)+1,
             "previous_hash": previous_hash,

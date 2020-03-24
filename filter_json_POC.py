@@ -142,3 +142,9 @@ def new_transfer(sender):
 
 
 print(new_transfer("Astolfo"))
+
+arr = [1,2,3,4,5,6,7,8,9]
+v = []
+for i in arr:
+    v.append('1')
+print(v)

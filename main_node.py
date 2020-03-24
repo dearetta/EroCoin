@@ -39,14 +39,47 @@ def mine_empty_block():
         pass
     nonce = blockchain.proof_of_work(last_nonce)
     previous_hash = blockchain.hash_block(last_block)
-    response = blockchain.new_block(nonce, valid_transact, previous_hash)
+    transactions = [valid_transact]
+    response = blockchain.new_block(nonce, transactions, previous_hash)
     return jsonify(response), 201
 
 
 @app.route('/mine/mempool', methods=['GET'])
 def mine_mempool_block():
-    # mine a new block from existing mempool transactions
-    pass
+    length = len(blockchain.mempool)
+    transactions = []
+    if length < 2 and length != 0:
+        transactions.append(blockchain.mempool[0])
+    elif length >= 2:
+        transactions.append(blockchain.mempool[0])
+        transactions.append(blockchain.mempool[1])
+    else:
+        return "No available transactions in the Mempool to mine!", 404
+
+    # Proof-of-work
+    last_block = blockchain.last_block
+    last_nonce = last_block['nonce']
+    nonce = blockchain.proof_of_work(last_nonce)
+
+    # Create a new fee payment for the miner
+    miner = wallet.public_hex
+    private_key = SigningKey.from_string(wallet.private, curve=NIST256p)
+    fees = []
+    for i in range(0, len(transactions)):
+        id = get_transact_id("None", blockchain.fee, miner)
+        signed_id = private_key.sign(id.encode()).hex()
+        valid_transact = blockchain.new_fee(id, miner, signed_id)
+        if not valid_transact:
+            return 'Your values are invalid/has been tampered!', 403
+        else:
+            fees.append(valid_transact)
+        blockchain.mempool.pop(i)
+
+    # Create a new block of existing transactions
+    transactions.extend(fees)
+    previous_hash = blockchain.hash_block(last_block)
+    response = blockchain.new_block(nonce, transactions, previous_hash)
+    return jsonify(response, 201)
 
 
 @app.route('/wallet/balance', methods=['GET'])
@@ -89,13 +122,15 @@ def get_chain():
     }
     return jsonify(response), 200
 
+
 @app.route('/mempool', methods=['GET'])
 def get_mempool():
     response = {
         'mempool': blockchain.mempool,
-        'length': len(blockchain.chain)
+        'length': len(blockchain.mempool)
     }
     return jsonify(response), 200
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
