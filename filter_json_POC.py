@@ -1,6 +1,7 @@
 import random
 import string
-
+import json
+import hashlib
 
 def new_transfer(sender):
     # create new transfer-type transaction
@@ -148,3 +149,14 @@ v = []
 for i in arr:
     v.append('1')
 print(v)
+
+
+def hash_block(block):
+    block_string = json.dumps(block).encode()
+    print(block_string)
+    return hashlib.sha256(block_string).hexdigest()
+
+last_block = {'difficulty': 1, 'index': 0, 'nonce': 69, 'previous_hash': '8132eb35f965fe190a9e903b1c392909579a816d9bcf18dfda3e942ed39be2d7', 'timestamp': 1585056323.1808214, 'transactions': [{'amount':
+0, 'id': 'Corvus_Rex', 'leftover': 0, 'recipient': 'None', 'sender': 'None', 'signature': 'Yeet', 'timestamp': 0, 'type': 'genesis', 'unspent': 1}]}
+hash = hash_block(last_block)
+print(hash)

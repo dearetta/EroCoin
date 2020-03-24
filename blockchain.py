@@ -4,6 +4,8 @@ from time import time
 import ecdsa
 from ecdsa import NIST256p
 from hashlib import sha256
+from urllib.parse import urlparse
+import requests
 
 class Blockchain:
     """
@@ -14,6 +16,7 @@ class Blockchain:
         "timestamp": when the block was mined
         "nonce": proof-of-work mining result
         "transactions": transactions in the block
+        "difficulty": Difficulty on mining this block (hash rate * time)
     }
 
     { //Transaction
@@ -34,9 +37,14 @@ class Blockchain:
         self.difficulty = 1  # difficulty of finding nonce
         self.diff_adjust_interval = 10  # difficulty adjusted per x block created
         self.block_generation_interval = 5  # expected minutes for one block creation
+        self.nodes = set()
         self.mempool = []
         self.reward = 5
         self.fee = 5
+
+    def register_node(self, address):
+        parsed_url = urlparse(address)
+        self.nodes.add(parsed_url.netloc)
 
     def new_transfer(self, id, sender, recipient, amount, signature):
         # create new transfer-type transaction
@@ -165,18 +173,19 @@ class Blockchain:
         transactions = []
         transactions.extend(transaction)
         block = {
-            "index": len(self.chain)+1,
+            "index": self.last_block['index']+1,
             "previous_hash": previous_hash,
             "timestamp": time(),
             "nonce": nonce,
-            "transactions": transactions
+            "transactions": transactions,
+            "difficulty": self.difficulty
         }
         self.chain.append(block)
         return block
 
     @staticmethod
     def hash_block(block):
-        block_string = json.dumps(block).encode()
+        block_string = json.dumps(block, sort_keys=True).encode()
         return hashlib.sha256(block_string).hexdigest()
 
     @property
@@ -202,7 +211,8 @@ class Blockchain:
                     "amount": 0,
                     "leftover": 0
                 }
-            ]
+            ],
+            "difficulty": 1
         }
         self.chain.append(genesis)
 
@@ -249,3 +259,70 @@ class Blockchain:
                 self.difficulty -= 1
             else:
                 pass
+
+    def valid_chain(self, chain):
+
+        last_block = chain[0]
+        current_index = 1
+
+        while current_index < len(chain):
+            block = chain[current_index]
+            print(f'{last_block}')
+            print(f'{block}')
+            print("\n-----------\n")
+            # Check that the hash of the block is correct
+            if block['previous_hash'] != self.hash_block(last_block):
+                print(last_block)
+                print(block['previous_hash'])
+                print(self.hash_block(last_block))
+                print('beet')
+                return False
+
+            # Check that the Proof of Work is correct
+            if not self.nonce_matches_difficulty(last_block['nonce'], block['nonce']):
+                print('yeet')
+                return False
+
+            last_block = block
+            current_index += 1
+
+        return True
+
+    def resolve_conflicts(self):
+        """
+        This is our Consensus Algorithm, it resolves conflicts
+        by replacing our chain with the longest one in the network.
+        :return: <bool> True if our chain was replaced, False if not
+        """
+
+        neighbours = self.nodes
+        new_chain = None
+
+        # We're looking for chains with higher computational effort than ours
+        max_diff = self.cumulative_difficulty()
+
+        # Grab and verify the chains from all the nodes in our network
+        for node in neighbours:
+            response = requests.get(f'http://{node}/chain')
+
+            if response.status_code == 200:
+                chain = response.json()['chain']
+                diff = response.json()['cumulative difficulty']
+
+                # Check if the length has higher computational effort and the chain is valid
+                if diff > max_diff and self.valid_chain(chain):
+                    max_diff = diff
+                    new_chain = chain
+
+        # Replace our chain if we discovered a new, valid chain longer than ours
+        if new_chain:
+            self.chain = new_chain
+            return True
+
+        return False
+
+    def cumulative_difficulty(self):
+        cum_diff = 0
+        for block in self.chain:
+            cum_diff += 2 ^ block['difficulty']
+        return cum_diff

@@ -28,6 +28,7 @@
   <component name="PropertiesComponent">
     <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
     <property name="last_opened_file_path" value="$PROJECT_DIR$/../ErosCoin" />
+    <property name="settings.editor.selected.configurable" value="terminal" />
   </component>
   <component name="RunDashboard">
     <option name="ruleStates">
@@ -41,7 +42,7 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="Python.main_node">
+  <component name="RunManager" selected="Python.filter_json_POC">
     <configuration name="filter_json_POC" type="PythonConfigurationType" factoryName="Python" temporary="true">
       <module name="EroCoin" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -107,8 +108,8 @@
     </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="Python.main_node" />
         <item itemvalue="Python.filter_json_POC" />
+        <item itemvalue="Python.main_node" />
         <item itemvalue="Python.recursion_test" />
       </list>
     </recent_temporary>
