@@ -20,11 +20,11 @@ class Blockchain:
     }
 
     { //Transaction
-     "id": random 64-bytes id
-     "type": transfer or fee/reward?
-     "sender": address (public key) of the sender, reward-type has no sender
+     "id": SHA256 hashed values of 'sender', 'recipient' and 'amount'
+     "type": transfer, fee or reward?
+     "sender": address (public key) of the sender, reward-type and fee-type has no sender
      "signature": signature derived from private key
-     "unspent": amount of leftover from last unspent transaction
+     "unspent": amount of leftover from last unspent transaction (TxOut)
      "previous_hash": hash of the previous transaction with leftover corresponding to the sender's address
      "recipient": address of the recipient
      "amount": amount to be transferred
