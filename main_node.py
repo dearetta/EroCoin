@@ -90,8 +90,24 @@ def mine_mempool_block():
 
 @app.route('/wallet/balance', methods=['GET'])
 def wallet_get_balance():
-    # Get a virtual balance from your past TxOuts (see current_balance in blockchain.py)
-    pass
+    resolved = blockchain.resolve_conflicts()
+    sender = wallet.public_decode
+    if resolved:
+        response = {
+            'message': 'Our chain was replaced',
+            'current_balance': blockchain.current_balance(sender),
+            'new_chain': blockchain.chain,
+
+        }
+    else:
+        response = {
+            'message': 'Our chain is authoritative',
+            'current_balance': blockchain.current_balance(sender),
+            'chain': blockchain.chain,
+
+        }
+
+    return jsonify(response), 200
 
 
 @app.route('/wallet/transfer', methods=['POST'])
